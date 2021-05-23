@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 )
@@ -10,6 +9,14 @@ type Response struct {
 	url     string
 	success bool
 	time    float64
+}
+
+type Request struct {
+	Method   string
+	Endpoint string
+	Headers  map[string][]string
+	Query    string
+	Error    error
 }
 
 func (r *Response) IsSuccess() bool {
@@ -24,7 +31,6 @@ func DoChannelRequest(url string, ch chan<- Response) {
 	_, err := client.Get(url)
 
 	secs := time.Since(start).Seconds()
-	fmt.Printf("%.2fs elapsed\n", secs)
 
 	success := true
 	if err != nil {
