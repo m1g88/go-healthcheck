@@ -2,43 +2,47 @@ package api
 
 import (
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 )
 
+// const Timeout = os.Getenv("TIMEOUT") || "5"
+
 type Response struct {
-	url     string
-	success bool
-	time    float64
+	url          string
+	Success      bool
+	HttpResponse *http.Response
 }
 
-type Request struct {
-	Method   string
-	Endpoint string
-	Headers  map[string][]string
-	Query    string
-	Error    error
+func DoRequest(request *http.Request) (*http.Response, error) {
+	client := &http.Client{}
+	return client.Do(request)
 }
 
-func (r *Response) IsSuccess() bool {
-	return r.success
-}
+func DoChannelRequest(url string, ch chan Response) {
+	timeout, err := strconv.Atoi(os.Getenv("TIMEOUT"))
 
-func DoChannelRequest(url string, ch chan<- Response) {
-	start := time.Now()
-	client := http.Client{
-		Timeout: 4 * time.Second,
+	if err != nil {
+		timeout = 5
 	}
-	_, err := client.Get(url)
 
-	secs := time.Since(start).Seconds()
+	client := &http.Client{
+		Timeout: time.Duration(timeout) * time.Second,
+	}
 
+	resp, err := client.Get(url)
+
+	// Success: any http status code that is returned from the website
+	// Failure: cannot reach the website (request timeout)
 	success := true
 	if err != nil {
 		success = false
 	}
+
 	ch <- Response{
-		url:     url,
-		success: success,
-		time:    secs,
+		url:          url,
+		Success:      success,
+		HttpResponse: resp,
 	}
 }

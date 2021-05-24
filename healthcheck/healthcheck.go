@@ -1,13 +1,15 @@
 package healthcheck
 
 import (
+	"bytes"
 	"encoding/csv"
 	"fmt"
 	"go-healthcheck/api"
+	"io/ioutil"
+	"net/http"
 	"os"
+	"time"
 )
-
-// accessToken := os.Getenv("AccessToken")
 
 type Healthcheck struct {
 	Url    []string
@@ -22,7 +24,7 @@ func (h *Healthcheck) CheckAll() {
 
 	for range h.Url {
 		res := <-ch
-		if res.IsSuccess() {
+		if res.Success {
 			h.Report.Success++
 		} else {
 			h.Report.Failure++
@@ -31,8 +33,42 @@ func (h *Healthcheck) CheckAll() {
 	}
 }
 
+func (h *Healthcheck) SendReport() error {
+	endpoint := os.Getenv("HEALTHCEHECK_ENDPOINT")
+	token := os.Getenv("ACCESS_TOKEN")
+
+	var jsonStr = []byte(h.Report.ToJson())
+
+	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonStr))
+
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	resp, err := api.DoRequest(req)
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer resp.Body.Close()
+
+	fmt.Println("response Status:", resp.Status)
+	fmt.Println("response Headers:", resp.Header)
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println("response Body:", string(body))
+
+	fmt.Println()
+
+	return nil
+}
+
 func Do() (*Healthcheck, error) {
 	url, err := getWebsiteCheckList()
+	start := time.Now()
 	if err != nil {
 		return nil, err
 	}
@@ -40,12 +76,8 @@ func Do() (*Healthcheck, error) {
 	h := Healthcheck{Url: url}
 
 	h.CheckAll()
-
+	h.Report.Total_time = time.Since(start).Nanoseconds()
 	return &h, nil
-}
-
-func SendReport() {
-
 }
 
 func getWebsiteCheckList() ([]string, error) {
