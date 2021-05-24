@@ -3,8 +3,6 @@ package healthcheck
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
-	"time"
 )
 
 type Report struct {
@@ -15,13 +13,9 @@ type Report struct {
 }
 
 func (r *Report) Print() {
-	nanostr := strconv.FormatInt(r.Total_time, 10)
-	nano, _ := time.ParseDuration(fmt.Sprintf("%s ns", nanostr))
-
 	fmt.Printf("Checked webistes: %v\n", r.Total_websites)
 	fmt.Printf("Successful websites: %v\n", r.Success)
 	fmt.Printf("Failure websites: %v\n", r.Failure)
-	fmt.Printf("Total times to finished checking website: %v [time to proceed (ms/sec/minutes\n", nano.Milliseconds())
 }
 
 func (r *Report) ToJson() string {

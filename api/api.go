@@ -1,13 +1,14 @@
 package api
 
 import (
+	"bytes"
+	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
 )
-
-// const Timeout = os.Getenv("TIMEOUT") || "5"
 
 type Response struct {
 	url          string
@@ -15,14 +16,34 @@ type Response struct {
 	HttpResponse *http.Response
 }
 
-func DoRequest(request *http.Request) (*http.Response, error) {
+func DoRequest(requestBody string) (*http.Response, error) {
+	endpoint := os.Getenv("HEALTHCEHECK_ENDPOINT")
+	token := os.Getenv("ACCESS_TOKEN")
+	jsonStr := []byte(requestBody)
+
+	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonStr))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+
 	client := &http.Client{}
-	return client.Do(request)
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer resp.Body.Close()
+
+	return resp, nil
 }
 
 func DoChannelRequest(url string, ch chan Response) {
 	timeout, err := strconv.Atoi(os.Getenv("TIMEOUT"))
-
 	if err != nil {
 		timeout = 5
 	}
@@ -32,7 +53,6 @@ func DoChannelRequest(url string, ch chan Response) {
 	}
 
 	resp, err := client.Get(url)
-
 	// Success: any http status code that is returned from the website
 	// Failure: cannot reach the website (request timeout)
 	success := true
