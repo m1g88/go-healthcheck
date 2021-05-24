@@ -3,21 +3,29 @@ package healthcheck
 import (
 	"fmt"
 	"go-healthcheck/api"
-	"time"
 )
 
-type Healthcheck struct {
-	Url    []string
-	Report Report
+type HealthCheck struct {
+	CheckList CheckList
+	Config    Config
+	Report    Report
 }
 
-func (h *Healthcheck) CheckAll() {
+type Config struct {
+	EndpointApi string
+	AccessToken string
+	Timeout     string
+}
+
+type CheckList []string
+
+func (h *HealthCheck) CheckAll() {
 	ch := make(chan api.Response)
-	for _, url := range h.Url {
-		go api.DoChannelRequest(url, ch)
+	for _, url := range h.CheckList {
+		go api.DoChannelRequest(url, h.Config.Timeout, ch)
 	}
 
-	for range h.Url {
+	for range h.CheckList {
 		res := <-ch
 		if res.Success {
 			h.Report.Success++
@@ -28,24 +36,17 @@ func (h *Healthcheck) CheckAll() {
 	}
 }
 
-func (h *Healthcheck) SendReport() {
-	resp, err := api.DoRequest(h.Report.ToJson())
+func (h *HealthCheck) SendReport() error {
+	resp, err := api.DoRequest(h.Config.EndpointApi, h.Config.AccessToken, h.Report.ToJson())
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
 	if resp.StatusCode == 400 {
-		fmt.Println("Report api has failure")
+		return fmt.Errorf("Report api has failure")
 	} else if resp.StatusCode != 200 {
-		fmt.Printf("Report api status: %v", resp.Status)
+		return fmt.Errorf("Report api status: %v", resp.Status)
 	}
-}
 
-func Check(url []string) *Healthcheck {
-	start := time.Now()
-	h := Healthcheck{Url: url}
-
-	h.CheckAll()
-	h.Report.Total_time = time.Since(start).Nanoseconds()
-	return &h
+	return nil
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 )
@@ -16,9 +15,8 @@ type Response struct {
 	HttpResponse *http.Response
 }
 
-func DoRequest(requestBody string) (*http.Response, error) {
-	endpoint := os.Getenv("HEALTHCEHECK_ENDPOINT")
-	token := os.Getenv("ACCESS_TOKEN")
+func DoRequest(endpoint string, token string, requestBody string) (*http.Response, error) {
+
 	jsonStr := []byte(requestBody)
 
 	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonStr))
@@ -36,20 +34,19 @@ func DoRequest(requestBody string) (*http.Response, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	defer resp.Body.Close()
 
 	return resp, nil
 }
 
-func DoChannelRequest(url string, ch chan Response) {
-	timeout, err := strconv.Atoi(os.Getenv("TIMEOUT"))
+func DoChannelRequest(url string, timeout string, ch chan Response) {
+	duration, err := strconv.Atoi(timeout)
 	if err != nil {
-		timeout = 5
+		duration = 5
 	}
 
 	client := &http.Client{
-		Timeout: time.Duration(timeout) * time.Second,
+		Timeout: time.Duration(duration) * time.Second,
 	}
 
 	resp, err := client.Get(url)
