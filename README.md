@@ -14,7 +14,8 @@ How to get `ACCESS_TOKEN` [here](https://developers.line.biz/en/docs/line-login/
 > Included ACCESS_TOKEN Valid for 30 days after 23-05-2021
 
 ## Mock server (mock/server.go)
-Use for creating host server and delay response for 10 seconds
+Use for creating host server `http://localhost:8000` delayed response for 10 seconds, and also included in `test.csv` list
+
 ```shell
 cd mock
 go run server.go
