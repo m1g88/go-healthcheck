@@ -55,8 +55,10 @@ func main() {
 
 	hck := healthcheck.Check(checkList)
 	hck.SendReport()
-	hck.Report.Print()
 
+	fmt.Printf("Checked webistes: %v\n", hck.Report.Total_websites)
+	fmt.Printf("Successful websites: %v\n", hck.Report.Success)
+	fmt.Printf("Failure websites: %v\n", hck.Report.Failure)
 	fmt.Printf("Total times to finished checking website: %s\n", time.Since(start))
 	fmt.Println("Done!")
 }
